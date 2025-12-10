@@ -1,7 +1,7 @@
 import React from "react";
 import ReactDOM from "react-dom/client";
-import "@mysten/dapp-kit/dist/index.css";
-import "./index.css";
+import "@mysten/dapp-kit/dist/index.css"; // Wajib untuk Wallet Kit
+import "./index.css"; // Wajib untuk Tailwind
 import App from "./App";
 
 import { SuiClientProvider, WalletProvider } from "@mysten/dapp-kit";
