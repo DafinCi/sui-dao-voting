@@ -9,7 +9,9 @@ import {
   useParams,
 } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { Toaster, toast } from "react-hot-toast"; // LIBRARY BARU
+import { Toaster, toast } from "react-hot-toast";
+import ReactMarkdown from "react-markdown"; // LIBRARY BARU: Markdown
+import confetti from "canvas-confetti"; // LIBRARY BARU: Confetti
 import {
   ConnectButton,
   useCurrentAccount,
@@ -35,16 +37,16 @@ import {
   CheckCircle2,
   BarChart3,
   WifiOff,
+  Search, // Icon Baru
+  Filter, // Icon Baru
 } from "lucide-react";
 import clsx from "clsx";
 
 // --- CONFIGURATION ---
-const PACKAGE_ID =
-  "0x171662eaaafb29c95f8329545f6f0548423568d69a55b526fce287434d2092a3";
-const DAO_ID =
-  "0xe0d944f57ad9f0291acf7ed46eddecb79482a0290b6a4d4ce062a3c17c05460b";
-const ADMIN_CAP_ID =
-  "0x924c047575c952e9fc34cbd71962bd074eb90ced2290984267771a97f70f7dcf";
+// Mengambil dari .env
+const PACKAGE_ID = import.meta.env.VITE_PACKAGE_ID;
+const DAO_ID = import.meta.env.VITE_DAO_ID;
+const ADMIN_CAP_ID = import.meta.env.VITE_ADMIN_CAP_ID;
 
 const CLOCK_ID = "0x6";
 const MODULE = "vote";
@@ -54,11 +56,38 @@ const EXPLORER_URL = "https://suiscan.xyz/testnet/object";
 const formatDate = (ms: number) =>
   new Date(ms).toLocaleDateString("id-ID", {
     year: "numeric",
-    month: "long",
+    month: "short",
     day: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
   });
+
+const triggerConfetti = () => {
+  const duration = 3 * 1000;
+  const animationEnd = Date.now() + duration;
+  const defaults = { startVelocity: 30, spread: 360, ticks: 60, zIndex: 0 };
+
+  const random = (min: number, max: number) =>
+    Math.random() * (max - min) + min;
+
+  const interval: any = setInterval(function () {
+    const timeLeft = animationEnd - Date.now();
+
+    if (timeLeft <= 0) {
+      return clearInterval(interval);
+    }
+
+    const particleCount = 50 * (timeLeft / duration);
+    confetti({
+      ...defaults,
+      particleCount,
+      origin: { x: random(0.1, 0.3), y: Math.random() - 0.2 },
+    });
+    confetti({
+      ...defaults,
+      particleCount,
+      origin: { x: random(0.7, 0.9), y: Math.random() - 0.2 },
+    });
+  }, 250);
+};
 
 // --- ANIMATION VARIANTS ---
 const pageTransition = {
@@ -67,9 +96,8 @@ const pageTransition = {
   exit: { opacity: 0, y: -10 },
 };
 
-// --- NEW COMPONENTS (UX UPGRADES) ---
+// --- COMPONENTS ---
 
-// 1. Skeleton Loading Card (Untuk Proposal List)
 const SkeletonCard = () => (
   <div className="bg-sui-card rounded-2xl border border-white/5 p-6 h-full animate-pulse">
     <div className="h-2 w-full bg-white/5 rounded-full mb-6"></div>
@@ -84,12 +112,8 @@ const SkeletonCard = () => (
   </div>
 );
 
-// 2. Network Guard (Peringatan Salah Jaringan)
 const NetworkGuard = () => {
   const { currentWallet, connectionStatus } = useCurrentWallet();
-
-  // Deteksi sederhana: Jika connect tapi chain bukan 'sui:testnet'
-  // Catatan: Implementasi detail tergantung wallet standard, ini basic check
   const isWrongNetwork =
     connectionStatus === "connected" &&
     currentWallet?.accounts[0]?.chains?.[0] &&
@@ -98,15 +122,13 @@ const NetworkGuard = () => {
   if (!isWrongNetwork) return null;
 
   return (
-    <div className="bg-red-500/90 text-white text-center py-2 px-4 text-sm font-bold flex justify-center items-center gap-2 fixed top-16 left-0 right-0 z-30 backdrop-blur-md">
+    <div className="bg-red-500/90 text-white text-center py-2 px-4 text-sm font-mono flex justify-center items-center gap-2 fixed top-16 left-0 right-0 z-30 backdrop-blur-md">
       <WifiOff size={16} />
       Warning: You are on the wrong network. Please switch your wallet to Sui
       Testnet.
     </div>
   );
 };
-
-// --- MAIN COMPONENTS ---
 
 const BottomNav = () => {
   const location = useLocation();
@@ -135,7 +157,7 @@ const BottomNav = () => {
                 )}
               >
                 <item.icon size={24} strokeWidth={isActive ? 2.5 : 2} />
-                <span className="text-[10px] font-bold mt-1">{item.label}</span>
+                <span className="text-[10px] font-mono mt-1">{item.label}</span>
                 {isActive && (
                   <motion.div
                     layoutId="nav-pill"
@@ -154,14 +176,14 @@ const BottomNav = () => {
 const Header = () => (
   <header className="sticky top-0 z-40 bg-sui-dark/80 backdrop-blur-md border-b border-white/5">
     <div className="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between">
-      <div className="flex items-center gap-2 font-black text-xl tracking-tighter text-white">
+      <div className="flex items-center gap-2 font-display font-bold text-xl tracking-tighter text-white">
         <div className="w-8 h-8 bg-gradient-to-br from-sui-blue to-sui-cyan rounded-lg flex items-center justify-center text-black shadow-lg shadow-sui-blue/20">
           S
         </div>
-        SuiDAO
+        Web3DevSolo
       </div>
       <div className="flex items-center gap-3">
-        <ConnectButton className="!bg-white/10 !text-white !font-bold !border-none !rounded-full hover:!bg-white/20 transition-all active:scale-95" />
+        <ConnectButton className="!bg-white/10 !text-white !font-mono !border-none !rounded-full hover:!bg-white/20 transition-all active:scale-95" />
       </div>
     </div>
     <NetworkGuard />
@@ -170,7 +192,6 @@ const Header = () => (
 
 // --- PAGES ---
 
-// 1. LANDING PAGE
 const LandingPage = () => (
   <motion.div
     variants={pageTransition}
@@ -183,19 +204,19 @@ const LandingPage = () => (
       <div className="inline-block px-3 py-1 mb-6 rounded-full border border-sui-blue/30 bg-sui-blue/10 text-sui-blue font-mono text-xs animate-pulse">
         &lt;DAO&gt; Live on Testnet &lt;/DAO&gt;
       </div>
-      <h1 className="text-6xl md:text-8xl font-black leading-[0.9] tracking-tighter mb-6 text-white">
+      <h1 className="text-6xl md:text-8xl font-display font-bold leading-[0.9] tracking-tighter mb-6 text-white">
         SUI <br />{" "}
-        <span className="text-transparent bg-clip-text bg-gradient-to-r from-sui-blue to-sui-purple">
+        <span className="text-transparent bg-clip-text bg-gradient-to-r from-sui-blue via-sui-cyan to-sui-purple">
           VOTING
         </span>
       </h1>
-      <p className="text-gray-400 text-lg mb-10 font-medium">
+      <p className="text-gray-400 text-lg mb-10 font-mono font-medium">
         Decentralized governance. Transparent. Secure.
       </p>
       <div className="flex flex-col sm:flex-row gap-4 justify-center">
         <Link
           to="/proposals"
-          className="px-8 py-4 bg-sui-blue text-white font-black text-lg rounded-xl shadow-[4px_4px_0px_#2563EB] hover:translate-y-1 hover:shadow-none transition-all flex items-center justify-center gap-2 active:scale-95"
+          className="px-8 py-4 bg-sui-blue text-white font-display font-bold text-lg rounded-xl shadow-[4px_4px_0px_#2563EB] hover:translate-y-1 hover:shadow-none transition-all flex items-center justify-center gap-2 active:scale-95"
         >
           Vote Now <ArrowRight size={20} />
         </Link>
@@ -210,25 +231,43 @@ const LandingPage = () => (
   </motion.div>
 );
 
-// 2. PROPOSALS LIST (ALL)
+// 2. PROPOSALS LIST (WITH SEARCH & FILTER)
 const ProposalsPage = () => {
   const { data, isLoading, isError, refetch } = useSuiClientQuery("getObject", {
     id: DAO_ID,
     options: { showContent: true },
   });
 
+  const [searchTerm, setSearchTerm] = useState("");
+  const [filter, setFilter] = useState<"all" | "active" | "closed">("all");
+
   const proposals =
     data?.data?.content?.dataType === "moveObject"
       ? (data.data.content.fields as any).proposals
       : [];
+
   useEffect(() => {
     refetch();
   }, [refetch]);
 
+  // Filtering Logic
+  const filteredProposals = proposals.filter((p: any) => {
+    const matchesSearch = p.fields.title
+      .toLowerCase()
+      .includes(searchTerm.toLowerCase());
+    const isExpired = Date.now() > Number(p.fields.deadline_ms);
+
+    let matchesFilter = true;
+    if (filter === "active") matchesFilter = !isExpired;
+    if (filter === "closed") matchesFilter = isExpired;
+
+    return matchesSearch && matchesFilter;
+  });
+
   if (isError)
     return (
-      <div className="text-center pt-20 text-red-500 font-bold">
-        Gagal memuat data. Cek koneksi internet.
+      <div className="text-center pt-20 text-red-500 font-mono">
+        Failed to load data.
       </div>
     );
 
@@ -240,101 +279,135 @@ const ProposalsPage = () => {
       exit="exit"
       className="pt-6 pb-32 px-4 max-w-7xl mx-auto"
     >
-      <div className="flex justify-between items-center mb-8 px-2">
-        <h2 className="text-3xl md:text-4xl font-black text-white">
-          All Proposals
-        </h2>
-        <button
-          onClick={() => {
-            refetch();
-            toast.success("Data Refreshed");
-          }}
-          className="text-xs text-sui-blue underline"
-        >
-          Refresh
-        </button>
+      <div className="flex flex-col md:flex-row justify-between items-end md:items-center mb-8 gap-4">
+        <div>
+          <h2 className="text-3xl md:text-4xl font-display font-bold text-white">
+            Proposals
+          </h2>
+          <p className="text-gray-400 text-sm">
+            Vote on on-chain governance proposals.
+          </p>
+        </div>
+
+        {/* SEARCH & FILTER CONTROLS */}
+        <div className="flex flex-col sm:flex-row gap-3 w-full md:w-auto">
+          <div className="relative">
+            <Search
+              className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500"
+              size={16}
+            />
+            <input
+              type="text"
+              placeholder="Search..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-full sm:w-64 bg-sui-card border border-white/10 rounded-xl py-2 pl-10 pr-4 text-white focus:border-sui-blue outline-none text-sm"
+            />
+          </div>
+          <div className="flex bg-sui-card border border-white/10 rounded-xl p-1">
+            {["all", "active", "closed"].map((f) => (
+              <button
+                key={f}
+                onClick={() => setFilter(f as any)}
+                className={clsx(
+                  "px-4 py-1.5 rounded-lg text-xs font-bold capitalize transition-all",
+                  filter === f
+                    ? "bg-sui-blue text-white shadow-md"
+                    : "text-gray-400 hover:text-white"
+                )}
+              >
+                {f}
+              </button>
+            ))}
+          </div>
+        </div>
       </div>
 
       <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {/* SKELETON LOADING STATE */}
-        {isLoading
-          ? Array.from({ length: 6 }).map((_, i) => <SkeletonCard key={i} />)
-          : proposals.map((p: any) => {
-              const isExpired = Date.now() > Number(p.fields.deadline_ms);
-              const totalVotes = p.fields.votes.reduce(
-                (a: any, b: any) => Number(a) + Number(b),
-                0
-              );
+        {isLoading ? (
+          Array.from({ length: 6 }).map((_, i) => <SkeletonCard key={i} />)
+        ) : filteredProposals.length === 0 ? (
+          <div className="col-span-full text-center py-20 bg-sui-card border border-dashed border-white/10 rounded-2xl text-gray-500">
+            No proposals found matching your criteria.
+          </div>
+        ) : (
+          filteredProposals.map((p: any) => {
+            const isExpired = Date.now() > Number(p.fields.deadline_ms);
+            const totalVotes = p.fields.votes.reduce(
+              (a: any, b: any) => Number(a) + Number(b),
+              0
+            );
 
-              return (
-                <Link
-                  to={`/proposal/${p.fields.id}`}
-                  key={p.fields.id}
-                  className="block h-full"
+            return (
+              <Link
+                to={`/proposal/${p.fields.id}`}
+                key={p.fields.id}
+                className="block h-full"
+              >
+                <motion.div
+                  whileHover={{ y: -5 }}
+                  className="group bg-sui-card rounded-2xl overflow-hidden border border-white/5 shadow-sm hover:shadow-sui-blue/20 transition-all h-full flex flex-col"
                 >
-                  <motion.div
-                    whileHover={{ y: -5 }}
-                    className="group bg-sui-card rounded-2xl overflow-hidden border border-white/5 shadow-sm hover:shadow-sui-blue/20 transition-all h-full flex flex-col"
-                  >
-                    <div
-                      className={clsx(
-                        "h-2 w-full",
-                        isExpired ? "bg-gray-400" : "bg-sui-green"
-                      )}
-                    />
-                    <div className="p-6 flex-1 flex flex-col">
-                      <div className="flex justify-between items-start mb-4">
-                        <span className="font-mono text-xs text-gray-500">
-                          ID: #{p.fields.id}
+                  <div
+                    className={clsx(
+                      "h-2 w-full",
+                      isExpired ? "bg-gray-400" : "bg-sui-green"
+                    )}
+                  />
+                  <div className="p-6 flex-1 flex flex-col">
+                    <div className="flex justify-between items-start mb-4">
+                      <span className="font-mono text-xs text-gray-500">
+                        ID: #{p.fields.id}
+                      </span>
+                      <span
+                        className={clsx(
+                          "px-2 py-0.5 rounded text-xs font-mono font-bold uppercase",
+                          !isExpired
+                            ? "bg-green-500/20 text-green-400"
+                            : "bg-gray-800 text-gray-400"
+                        )}
+                      >
+                        {!isExpired ? "OPEN" : "CLOSED"}
+                      </span>
+                    </div>
+                    <h3 className="text-xl font-mono font-bold leading-tight mb-2 text-white group-hover:text-sui-blue transition-colors line-clamp-2">
+                      {p.fields.title}
+                    </h3>
+                    <p className="text-gray-400 text-sm mb-6 flex-1 line-clamp-2">
+                      {p.fields.description}
+                    </p>
+
+                    <div className="space-y-3 pt-4 border-t border-white/5">
+                      <div className="flex justify-between text-xs text-gray-500">
+                        <span className="flex items-center gap-1">
+                          <User size={12} /> Admin
                         </span>
-                        <span
-                          className={clsx(
-                            "px-2 py-0.5 rounded text-xs font-bold uppercase",
-                            !isExpired
-                              ? "bg-green-500/20 text-green-400"
-                              : "bg-gray-800 text-gray-400"
-                          )}
-                        >
-                          {!isExpired ? "OPEN" : "CLOSED"}
+                        <span className="flex items-center gap-1">
+                          <Clock size={12} /> {isExpired ? "Ended" : "Active"}
                         </span>
                       </div>
-                      <h3 className="text-xl font-bold leading-tight mb-2 text-white group-hover:text-sui-blue transition-colors line-clamp-2">
-                        {p.fields.title}
-                      </h3>
-                      <p className="text-gray-400 text-sm mb-6 flex-1 line-clamp-2">
-                        {p.fields.description}
-                      </p>
-
-                      <div className="space-y-3 pt-4 border-t border-white/5">
-                        <div className="flex justify-between text-xs text-gray-500">
-                          <span className="flex items-center gap-1">
-                            <User size={12} /> Admin
-                          </span>
-                          <span className="flex items-center gap-1">
-                            <Clock size={12} /> {isExpired ? "Ended" : "Active"}
-                          </span>
-                        </div>
-                        <div className="flex justify-between items-center">
-                          <span className="text-sm font-bold text-white flex items-center gap-1">
-                            <TrophyIcon size={14} className="text-sui-blue" />{" "}
-                            {totalVotes} Votes
-                          </span>
-                          <div className="text-xs bg-sui-blue/10 text-sui-blue px-3 py-1 rounded-full font-bold group-hover:bg-sui-blue group-hover:text-white transition-colors">
-                            Details
-                          </div>
+                      <div className="flex justify-between items-center">
+                        <span className="text-sm font-mono font-bold text-white flex items-center gap-1">
+                          <TrophyIcon size={14} className="text-sui-blue" />{" "}
+                          {totalVotes} Votes
+                        </span>
+                        <div className="text-xs bg-sui-blue/10 text-sui-blue px-3 py-1 rounded-full font-mono font-bold group-hover:bg-sui-blue group-hover:text-white transition-colors">
+                          Details
                         </div>
                       </div>
                     </div>
-                  </motion.div>
-                </Link>
-              );
-            })}
+                  </div>
+                </motion.div>
+              </Link>
+            );
+          })
+        )}
       </div>
     </motion.div>
   );
 };
 
-// 3. PROPOSAL DETAIL PAGE
+// 3. PROPOSAL DETAIL PAGE (WITH MARKDOWN & CONFETTI)
 const ProposalDetail = () => {
   const { id } = useParams();
   const { data, isLoading, isError } = useSuiClientQuery("getObject", {
@@ -410,6 +483,7 @@ const ProposalDetail = () => {
       loading: "Submitting vote...",
       success: () => {
         setVoted(true);
+        triggerConfetti(); // TRIGGER CONFETTI ON SUCCESS
         return "Vote successfully cast!";
       },
       error: "Voting failed. Check console.",
@@ -431,14 +505,13 @@ const ProposalDetail = () => {
         ← Back to Proposals
       </Link>
 
-      {/* Header Mobile Responsive */}
       <div className="bg-sui-card border border-white/10 rounded-3xl p-6 md:p-8 mb-6 shadow-sm">
         <div className="flex flex-col md:flex-row justify-between items-start gap-4 mb-4">
           <div>
             <div className="flex items-center gap-3 mb-2">
               <span
                 className={clsx(
-                  "px-3 py-1 rounded-full text-xs font-bold uppercase",
+                  "px-3 py-1 rounded-full text-xs font-mono font-bold uppercase",
                   !isExpired
                     ? "bg-green-500/20 text-green-400"
                     : "bg-red-500/20 text-red-400"
@@ -450,13 +523,13 @@ const ProposalDetail = () => {
                 ID: #{proposal.fields.id}
               </span>
             </div>
-            <h1 className="text-2xl md:text-4xl font-black text-white leading-tight">
+            <h1 className="text-2xl md:text-4xl font-display font-bold text-white leading-tight">
               {proposal.fields.title}
             </h1>
           </div>
           <div className="text-left md:text-right w-full md:w-auto bg-white/5 md:bg-transparent p-3 md:p-0 rounded-xl">
             <div className="text-xs text-gray-500 mb-1">Deadline</div>
-            <div className="font-bold text-white flex items-center gap-2">
+            <div className="font-mono font-bold text-white flex items-center gap-2">
               <Calendar size={16} />{" "}
               {formatDate(Number(proposal.fields.deadline_ms))}
             </div>
@@ -477,22 +550,19 @@ const ProposalDetail = () => {
       </div>
 
       <div className="grid md:grid-cols-3 gap-6">
-        {/* Detail */}
         <div className="md:col-span-2 space-y-6">
           <div className="bg-sui-card border border-white/10 rounded-3xl p-6 md:p-8">
-            <h3 className="text-xl font-bold text-white mb-4">
+            <h3 className="text-xl font-mono font-bold text-white mb-4">
               Description & Goals
             </h3>
+            {/* MARKDOWN RENDERER */}
             <div className="prose prose-sm prose-invert max-w-none text-gray-300">
-              <p className="whitespace-pre-wrap leading-relaxed">
-                {proposal.fields.description}
-              </p>
+              <ReactMarkdown>{proposal.fields.description}</ReactMarkdown>
             </div>
           </div>
 
-          {/* Metadata */}
           <div className="bg-sui-card border border-white/10 rounded-3xl p-6">
-            <h3 className="text-sm font-bold text-white mb-4 uppercase tracking-wider">
+            <h3 className="text-sm font-mono font-bold text-white mb-4 uppercase tracking-wider">
               Metadata
             </h3>
             <div className="space-y-3 text-xs font-mono">
@@ -520,10 +590,9 @@ const ProposalDetail = () => {
           </div>
         </div>
 
-        {/* Vote Section */}
         <div className="space-y-6">
           <div className="bg-sui-card border border-white/10 rounded-3xl p-6 sticky top-24">
-            <h3 className="font-bold text-white mb-4 flex items-center gap-2">
+            <h3 className="font-mono font-bold text-white mb-4 flex items-center gap-2">
               {isExpired ? <Lock size={18} /> : <CheckCircle2 size={18} />}
               {isExpired ? "Voting Closed" : "Cast Your Vote"}
             </h3>
@@ -541,7 +610,7 @@ const ProposalDetail = () => {
                       onClick={() => handleVote(idx)}
                       className="w-full py-4 px-4 rounded-xl border border-white/10 hover:border-sui-blue hover:bg-sui-blue/10 transition-all text-left flex justify-between items-center group active:scale-95"
                     >
-                      <span className="font-bold text-white group-hover:text-sui-blue">
+                      <span className="font-mono font-bold text-white group-hover:text-sui-blue">
                         {opt}
                       </span>
                       <div className="w-5 h-5 rounded-full border-2 border-gray-500 group-hover:border-sui-blue"></div>
@@ -549,7 +618,7 @@ const ProposalDetail = () => {
                   ))}
                 </div>
               ) : (
-                <div className="p-4 bg-green-500/10 text-green-500 rounded-xl text-center font-bold border border-green-500/20">
+                <div className="p-4 bg-green-500/10 text-green-500 rounded-xl text-center font-mono font-bold border border-green-500/20">
                   You have voted!
                 </div>
               )
@@ -559,9 +628,8 @@ const ProposalDetail = () => {
               </div>
             )}
 
-            {/* Live Stats */}
             <div className="mt-8 pt-6 border-t border-white/10">
-              <h3 className="font-bold text-white mb-4 text-sm uppercase tracking-wide">
+              <h3 className="font-mono font-bold text-white mb-4 text-sm uppercase tracking-wide">
                 Live Statistics
               </h3>
               <div className="space-y-4">
@@ -573,7 +641,7 @@ const ProposalDetail = () => {
                     <div key={idx}>
                       <div className="flex justify-between text-xs mb-1">
                         <span className="text-gray-300">{opt}</span>
-                        <span className="font-bold text-white">
+                        <span className="font-mono font-bold text-white">
                           {Math.round(percent)}%
                         </span>
                       </div>
@@ -627,7 +695,7 @@ const ResultsPage = () => {
     >
       <div className="flex justify-between items-center mb-8 px-2">
         <div>
-          <h2 className="text-3xl md:text-4xl font-black text-white">
+          <h2 className="text-3xl md:text-4xl font-display font-bold text-white">
             Final Results
           </h2>
           <p className="text-gray-400 mt-1 text-sm md:text-base">
@@ -691,7 +759,7 @@ const ResultsPage = () => {
                       </span>
                     </div>
 
-                    <h3 className="text-lg font-bold text-white mb-6 line-clamp-2">
+                    <h3 className="text-lg font-mono font-bold text-white mb-6 line-clamp-2">
                       {p.fields.title}
                     </h3>
 
@@ -704,7 +772,7 @@ const ResultsPage = () => {
                       <div className="text-xs uppercase opacity-80 mb-1">
                         Final Outcome
                       </div>
-                      <div className="text-2xl font-black">
+                      <div className="text-2xl font-display font-bold">
                         {winnerName.toUpperCase()}
                       </div>
                     </div>
@@ -720,7 +788,7 @@ const ResultsPage = () => {
                             className="flex justify-between text-xs text-gray-300"
                           >
                             <span>{opt}</span>
-                            <span className="font-bold">
+                            <span className="font-mono font-bold">
                               {Math.round(percent)}%
                             </span>
                           </div>
@@ -728,7 +796,7 @@ const ResultsPage = () => {
                       })}
                     </div>
                   </div>
-                  <div className="mt-auto p-4 bg-white/5 border-t border-white/5 text-center text-sui-blue font-bold text-sm hover:bg-white/10 transition-colors">
+                  <div className="mt-auto p-4 bg-white/5 border-t border-white/5 text-center text-sui-blue font-mono font-bold text-sm hover:bg-white/10 transition-colors">
                     View Final Details
                   </div>
                 </motion.div>
@@ -741,7 +809,7 @@ const ResultsPage = () => {
   );
 };
 
-// 5. RESULT DETAIL (READ ONLY)
+// 5. RESULT DETAIL (READ ONLY - WITH MARKDOWN)
 const ResultDetail = () => {
   const { id } = useParams();
   const { data, isLoading } = useSuiClientQuery("getObject", {
@@ -814,7 +882,7 @@ const ResultDetail = () => {
           </div>
           <h1
             className={clsx(
-              "text-6xl font-black mb-2 text-transparent bg-clip-text bg-gradient-to-r",
+              "text-6xl font-display font-bold mb-2 text-transparent bg-clip-text bg-gradient-to-r",
               isTie
                 ? "from-gray-400 to-gray-600"
                 : winnerName.toLowerCase() === "yes"
@@ -831,7 +899,7 @@ const ResultDetail = () => {
 
         <div className="grid md:grid-cols-2 gap-8 mb-8">
           <div className="bg-white/5 rounded-2xl p-6">
-            <h3 className="font-bold text-white mb-4 flex items-center gap-2">
+            <h3 className="font-mono font-bold text-white mb-4 flex items-center gap-2">
               <BarChart3 size={18} /> Vote Breakdown
             </h3>
             <div className="space-y-4">
@@ -842,7 +910,9 @@ const ResultDetail = () => {
                   <div key={idx}>
                     <div className="flex justify-between text-sm mb-1 text-gray-300">
                       <span>{opt}</span>
-                      <span className="font-bold">{Math.round(percent)}%</span>
+                      <span className="font-mono font-bold">
+                        {Math.round(percent)}%
+                      </span>
                     </div>
                     <div className="h-4 bg-gray-700 rounded-full overflow-hidden">
                       <motion.div
@@ -865,11 +935,13 @@ const ResultDetail = () => {
 
           <div className="bg-white/5 rounded-2xl p-6 flex flex-col justify-center text-center">
             <div className="mb-4">
-              <div className="text-4xl font-black text-white">{totalVotes}</div>
+              <div className="text-4xl font-display font-bold text-white">
+                {totalVotes}
+              </div>
               <div className="text-xs text-gray-500 uppercase">Total Votes</div>
             </div>
             <div>
-              <div className="text-4xl font-black text-white">
+              <div className="text-4xl font-display font-bold text-white">
                 {proposal.fields.voters.length}
               </div>
               <div className="text-xs text-gray-500 uppercase">
@@ -880,13 +952,16 @@ const ResultDetail = () => {
         </div>
 
         <div className="border-t border-white/10 pt-6">
-          <h3 className="font-bold text-white mb-2">Proposal Context</h3>
-          <h4 className="text-lg font-bold text-gray-300 mb-2">
+          <h3 className="font-mono font-bold text-white mb-2">
+            Proposal Context
+          </h3>
+          <h4 className="text-lg font-mono font-bold text-gray-300 mb-2">
             {proposal.fields.title}
           </h4>
-          <p className="text-sm text-gray-400 line-clamp-3">
-            {proposal.fields.description}
-          </p>
+          {/* MARKDOWN RENDERER */}
+          <div className="prose prose-sm prose-invert max-w-none text-gray-400 mb-4">
+            <ReactMarkdown>{proposal.fields.description}</ReactMarkdown>
+          </div>
 
           <div className="mt-4 pt-4 border-t border-dashed border-white/10 flex justify-between items-center text-xs">
             <span className="text-gray-500 font-mono">
@@ -935,7 +1010,7 @@ const CreatePage = () => {
       <div className="pt-20 px-4 text-center">
         <div className="max-w-md mx-auto bg-sui-card p-8 rounded-3xl border border-red-500/30 shadow-sm">
           <Lock size={48} className="mx-auto text-red-500 mb-4" />
-          <h2 className="text-2xl font-black text-white mb-2">
+          <h2 className="text-2xl font-display font-bold text-white mb-2">
             Access Restricted
           </h2>
           <p className="text-gray-400 mb-6">Connect wallet first.</p>
@@ -953,7 +1028,9 @@ const CreatePage = () => {
       <div className="pt-20 px-4 text-center">
         <div className="max-w-md mx-auto bg-sui-card p-8 rounded-3xl border border-red-500 shadow-md">
           <AlertTriangle size={32} className="mx-auto text-red-500 mb-4" />
-          <h2 className="text-2xl font-black text-white mb-2">Access Denied</h2>
+          <h2 className="text-2xl font-display font-bold text-white mb-2">
+            Access Denied
+          </h2>
           <p className="text-gray-400 mb-6">
             Only <strong>Admin</strong> can create proposals.
           </p>
@@ -1027,10 +1104,12 @@ const CreatePage = () => {
           Admin Access
         </span>
       </div>
-      <h2 className="text-4xl font-black mb-8 text-white">Create Proposal</h2>
+      <h2 className="text-4xl font-display font-bold mb-8 text-white">
+        Create Proposal
+      </h2>
       <div className="space-y-6">
         <div>
-          <label className="block text-sm font-bold text-gray-400 mb-2 uppercase">
+          <label className="block text-sm font-mono font-bold text-gray-400 mb-2 uppercase">
             Title
           </label>
           <input
@@ -1042,15 +1121,15 @@ const CreatePage = () => {
           />
         </div>
         <div>
-          <label className="block text-sm font-bold text-gray-400 mb-2 uppercase">
-            Description
+          <label className="block text-sm font-mono font-bold text-gray-400 mb-2 uppercase">
+            Description (Markdown Supported)
           </label>
           <textarea
             value={form.desc}
             onChange={(e) => setForm({ ...form, desc: e.target.value })}
             rows={5}
             className="w-full bg-sui-card border-2 border-[#30363d] rounded-xl p-4 text-white focus:border-sui-blue outline-none"
-            placeholder="Description..."
+            placeholder="You can use **bold**, *italic*, or - lists here..."
           />
         </div>
         <div className="grid grid-cols-2 gap-4">
@@ -1069,7 +1148,7 @@ const CreatePage = () => {
             />
           </div>
           <div>
-            <label className="block text-sm font-bold text-gray-400 mb-2">
+            <label className="block text-sm font-mono font-bold text-gray-400 mb-2">
               Options (Comma separated)
             </label>
             <input
@@ -1085,7 +1164,7 @@ const CreatePage = () => {
           onClick={handleSubmit}
           disabled={loading}
           type="button"
-          className="w-full py-5 bg-gradient-to-r from-sui-blue to-sui-purple text-white text-xl font-black rounded-xl shadow-lg hover:shadow-sui-blue/50 transition-all disabled:opacity-50"
+          className="w-full px-8 py-4 bg-sui-blue text-white font-display font-bold text-lg rounded-xl shadow-[4px_4px_0px_#2563ED] hover:translate-y-1 hover:shadow-none transition-all flex items-center justify-center gap-2 active:scale-95"
         >
           {loading ? <Loader2 className="animate-spin mx-auto" /> : "Publish"}
         </button>
@@ -1102,7 +1181,7 @@ function App() {
 
   return (
     <Router>
-      <div className="min-h-screen relative font-sans selection:bg-sui-blue selection:text-white pb-20 bg-sui-dark text-white transition-colors duration-300">
+      <div className="min-h-screen relative font-mono selection:bg-sui-blue selection:text-white pb-20 bg-sui-dark text-white transition-colors duration-300">
         <Toaster
           position="bottom-right"
           toastOptions={{

@@ -20,7 +20,8 @@ export default {
       },
       fontFamily: {
         sans: ["Inter", "sans-serif"],
-        display: ["Roobert", "Inter", "sans-serif"],
+        display: ["Space Grotesk", "sans-serif"],
+        mono: ["Space Mono", "monospace"],
       },
       backgroundImage: {
         "grid-pattern":
