@@ -8,7 +8,7 @@ export const Header = () => (
         <div className="w-8 h-8 bg-gradient-to-br from-sui-blue to-sui-cyan rounded-lg flex items-center justify-center text-black shadow-lg shadow-sui-blue/20">
           S
         </div>
-        SuiDAO
+        Web3DevSolo
       </div>
       <div className="flex items-center gap-3">
         <ConnectButton className="!bg-white/10 !text-white !font-mono !border-none !rounded-full hover:!bg-white/20 transition-all active:scale-95" />
